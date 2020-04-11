@@ -11,7 +11,7 @@ const store = new class {
 
     const idx = this.deps[dep].push(listener) - 1
 
-    return function unSubscribe() {
+    return () => {
       delete this.deps[dep][idx]
     }
   }
@@ -38,7 +38,7 @@ const store = new class {
   }
 }
 
-store.subscribe("user", (state) => {
+const unSubscribeUser = store.subscribe("user", (state) => {
   console.log("[subscriber:user] : ", state)
 })
 
@@ -56,15 +56,24 @@ store.publish("board", { board: { title: "today is..."} })
 store.publish("board", { board:{ title: "lucky day!"} })
 
 /* not working merged update ( because of async ) */
-getUser("0001", 4000).then((data) => {
+getUser("0001", 3000).then((data) => {
   store.publish("user", { user: data })
 })
-getUser("0002", 5000).then((data) => {
+getUser("0002", 4000).then((data) => {
   store.publish("user", { user: data })
 })
-getUser("0003", 6000).then((data) => {
+getUser("0003", 5000).then((data) => {
   store.publish("user", { user: data })
 })
+
+setTimeout(() => {
+  /* Listeners are not called due to unsubscription. */
+  unSubscribeUser()
+  store.publish("user", { user: { name: "A" }} )
+  store.publish("user", { user: { name: "B" }} )
+  store.publish("user", { user: { name: "C" }} )
+  store.publish("user", { user: { name: "D" }} )
+}, 6000)
 
 function getUser (name, ms) {
   return new Promise(resolve => {
